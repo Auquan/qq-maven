@@ -40,7 +40,7 @@ class MyTradingParams(TradingSystemParameters):
         self.__additionalMarketFeatureConfigDicts = []
         self.__fees = {'brokerage': 0.001,'spread': 0.05}
         self.__startDate = '2010/06/02'
-        self.__endDate = '2010/07/23'
+        self.__endDate = '2013/02/07'
         super(MyTradingParams, self).__init__()
 
 
