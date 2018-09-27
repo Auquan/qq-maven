@@ -40,7 +40,7 @@ from problem3_trading_params import MyTradingParams
 class MyTradingFunctions():
 
     def __init__(self):  #Put any global variables here
-        self.lookback = 1500  ## max number of historical datapoints you want at any given time
+        self.lookback = 500  ## max number of historical datapoints you want at any given time
         self.targetVariable = 'Y'
         self.dataSetId = 'qq6p3data'
         self.params = {}
@@ -50,7 +50,7 @@ class MyTradingFunctions():
 
         # and set a frequency at which you want to update the model
 
-        self.updateFrequency = 75
+        self.updateFrequency = 65
 
 
     ###########################################
@@ -149,8 +149,6 @@ class MyTradingFunctions():
 
         # if you don't enough data yet, don't make a prediction
         if updateNum<=2*self.updateFrequency:
-            print('predictions')
-            print(predictions)
             return predictions
 
         # Once you have enough data, start making predictions
@@ -167,7 +165,8 @@ class MyTradingFunctions():
         factor2Values = (ma1/ma2)                                   #DF with rows=timestamp and columns=stockIDS
 
         # Now looping over all stocks:
-        for s in self.getSymbolsToTrade():
+        ids = self.getSymbolsToTrade() if len(self.getSymbolsToTrade())>0 else mom1.columns
+        for s in ids:
             #Creating a dataframe to hold features for this stock
             X = pd.DataFrame(index=Y.index)         #DF with rows=timestamp and columns=featureNames
             X['F1'] = factor1Values[s]
@@ -181,24 +180,31 @@ class MyTradingFunctions():
 
             # if you are at the update frequency, update the model
             if (updateNum-1)%self.updateFrequency==0:
+                try:
+                    # drop nans and infs from X
+                    X = X.replace([np.inf, -np.inf], np.nan).dropna()
+                    # create a target variable vector for this stock, with same index as X
+                    y_s = Y[s].loc[Y.index.isin(X.index)]
 
-                # drop nans and infs from X
-                X = X.replace([np.inf, -np.inf], np.nan).dropna()
-                # create a target variable vector for this stock, with same index as X
-                y_s = Y[s].loc[Y.index.isin(X.index)]
+                    print('Training...')
+                    # make numpy arrays with the right shape
+                    x_train = np.array(X)[:-1]                         # shape = timestamps x numFeatures
+                    y_train = np.array(y_s)[:-1].astype(int).reshape(-1) # shape = timestamps x 1
+                    self.model[s].fit(x_train, y_train)
+                except ValueError:
+                    continue
 
-                print('Training...')
-                # make numpy arrays with the right shape
-                x_train = np.array(X)[:-1]                         # shape = timestamps x numFeatures
-                y_train = np.array(y_s)[:-1].astype(int).reshape(-1) # shape = timestamps x 1
-                self.model[s].fit(x_train, y_train)
 
             # make your prediction using your model
             # first verify none of the features are nan or inf
             if X.iloc[-1].replace([np.inf, -np.inf], np.nan).hasnans:
                 y_predict = 0.5
             else:
-                y_predict = self.model[s].predict(X.iloc[-1].values.reshape(1,-1))
+                try:
+                    y_predict = self.model[s].predict(X.iloc[-1].values.reshape(1,-1))
+                except:
+                    y_predict = 0.5
+
 
             # if you are making probabilistic predictions, set a threshold to convert them to 0/1
             threshold = 0.8

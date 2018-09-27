@@ -332,7 +332,16 @@ class PnLCalculator(Feature):
         tradePrice = pd.Series([instrumentManager.getInstrument(x).getLastTradePrice() for x in priceData.columns], index=priceData.columns)
         tradeLoss = pd.Series([instrumentManager.getInstrument(x).getLastTradeLoss() for x in priceData.columns], index=priceData.columns)
         pnl = (previousPosition * (currentPrice - previousPrice) * S2Price) + (changeInPosition * (currentPrice - tradePrice) * S2Price) - fees - tradeLoss
-        print(fees, pnl)
+        # printdf = pd.DataFrame(index=pnl.index)
+        # printdf['currentPrice'] = currentPrice
+        # printdf['S1Price'] = S1Price
+        # printdf['S2Price'] = S2Price
+        # printdf['position'] = currentPosition
+        # printdf['fees'] = fees
+        # printdf['pnl'] = pnl
+
+        # print(printdf)
+
         cumulativePnl += pnl
         return cumulativePnl
 
